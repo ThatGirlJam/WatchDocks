@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .history/
+
+*.mp4
+dataset/insecrawl/images

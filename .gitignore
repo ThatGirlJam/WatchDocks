@@ -25,3 +25,6 @@ dist-ssr
 
 .history/
 .env
+*.mp4
+dataset/insecrawl/images
+public/videos_converted.mp4

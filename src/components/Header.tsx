@@ -1,6 +1,14 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Bell, Settings, Shield, Clock, Home, Info } from "lucide-react";
+import {
+  Bell,
+  Settings,
+  Shield,
+  Clock,
+  Home,
+  Info,
+  CheckCircle,
+} from "lucide-react";
 import { useApp } from "../context/AppContext";
 import SettingsModal from "./SettingsModal";
 import NotificationsModal from "./NotificationsModal";
@@ -67,6 +75,23 @@ const Header: React.FC = () => {
             >
               <Info className="h-4 w-4" />
               <span>Details</span>
+            </Link>
+            <Link
+              to="/review"
+              className={`flex items-center space-x-1 hover:text-blue-400 ${
+                location.pathname === "/review"
+                  ? "text-blue-400"
+                  : "text-gray-300"
+              }`}
+              onClick={e => {
+                if (location.pathname !== "/review") {
+                  e.preventDefault();
+                  window.location.href = "/review";
+                }
+              }}
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>Review</span>
             </Link>
           </nav>
 
@@ -146,6 +171,15 @@ const Header: React.FC = () => {
         >
           <Info className="h-5 w-5" />
           <span className="text-xs">Details</span>
+        </Link>
+        <Link
+          to="/review"
+          className={`flex flex-col items-center ${
+            location.pathname === "/review" ? "text-blue-400" : "text-gray-300"
+          }`}
+        >
+          <CheckCircle className="h-5 w-5" />
+          <span className="text-xs">Review</span>
         </Link>
       </div>
 

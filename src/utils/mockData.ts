@@ -66,26 +66,26 @@ const generateMockCameras = (): Camera[] => [
 //   },
 // ];
 
-// Function to simulate a new alert
-export const generateRandomAlert = (cameras: Camera[]): Alert | null => {
-  // Only create alerts for online cameras
-  const onlineCameras = cameras.filter((camera) => camera.status === "online");
-  if (onlineCameras.length === 0) return null;
+// // Function to simulate a new alert
+// export const generateRandomAlert = (cameras: Camera[]): Alert | null => {
+//   // Only create alerts for online cameras
+//   const onlineCameras = cameras.filter((camera) => camera.status === "online");
+//   if (onlineCameras.length === 0) return null;
 
-  const camera =
-    onlineCameras[Math.floor(Math.random() * onlineCameras.length)];
+//   const camera =
+//     onlineCameras[Math.floor(Math.random() * onlineCameras.length)];
 
-  const bikeImages = [theft1, theft2, theft1analysis];
+//   const bikeImages = [theft1, theft2, theft1analysis];
 
-  return {
-    id: `alert-${Date.now()}`,
-    timestamp: new Date(),
-    imageUrl: bikeImages[Math.floor(Math.random() * bikeImages.length)],
-    confidence: 0.6 + Math.random() * 0.35, // Random between 0.6 and 0.95
-    location: camera.name,
-    status: "new",
-  };
-};
+//   return {
+//     id: `alert-${Date.now()}`,
+//     timestamp: new Date(),
+//     imageUrl: bikeImages[Math.floor(Math.random() * bikeImages.length)],
+//     confidence: 0.6 + Math.random() * 0.35, // Random between 0.6 and 0.95
+//     location: camera.name,
+//     status: "new",
+//   };
+// };
 
 // Helper to generate a unique ID
 const generateRandomId = (): string =>

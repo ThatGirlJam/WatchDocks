@@ -21,6 +21,7 @@ const VideoPlayer: React.FC = () => {
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const roiCanvasRef = useRef<HTMLCanvasElement>(null); // New ref for ROI drawing
   const behindCounterRef = useRef<NodeJS.Timeout | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const previousFrameRef = useRef<ImageData | null>(null);
@@ -78,7 +79,7 @@ const VideoPlayer: React.FC = () => {
       const d = vid.duration;
       setDuration(d);
       // Start at 80% of the video for demo purposes
-      const startPoint = d * 0.8;
+      const startPoint = d * 0.75;
       vid.currentTime = startPoint;
       setCurrentTime(startPoint);
       setMaxSeek(startPoint);
@@ -313,28 +314,78 @@ const VideoPlayer: React.FC = () => {
   
   // Start/stop ROI drawing mode
   const toggleRoiDrawingMode = () => {
-    setIsDrawingRoi(!isDrawingRoi);
-    if (!isDrawingRoi) {
-      setRoi([]);
+    if (isDrawingRoi) {
+      // When finishing drawing mode, save the ROI
+      if (roi.length >= 3) {
+        localStorage.setItem(`roi_${activeCamera?.id}`, JSON.stringify(roi));
+      }
     } else {
-      // Save ROI to local storage when finished drawing
-      localStorage.setItem(`roi_${activeCamera?.id}`, JSON.stringify(roi));
+      // When starting drawing mode, clear existing ROI
+      setRoi([]);
     }
+    setIsDrawingRoi(!isDrawingRoi);
   };
   
-  // Handle canvas click for ROI points
+  // Fix ROI drawing to scale coordinates correctly
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawingRoi) return;
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setRoi(prevRoi => {
+
+    const canvas = roiCanvasRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const videoRect = video.getBoundingClientRect();
+
+    // Calculate scaling factors between video and canvas
+    const scaleX = video.videoWidth / videoRect.width;
+    const scaleY = video.videoHeight / videoRect.height;
+
+    // Get click coordinates relative to the canvas
+    const x = (e.clientX - canvasRect.left) * scaleX;
+    const y = (e.clientY - canvasRect.top) * scaleY;
+
+    setRoi((prevRoi) => {
       const newRoi = [...prevRoi, { x, y }];
+
+      // Draw the updated ROI points and lines
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Clear canvas and add semi-transparent overlay
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw points and connecting lines
+        ctx.fillStyle = 'red';
+        ctx.strokeStyle = 'yellow';
+        ctx.lineWidth = 2;
+
+        // Draw all points
+        newRoi.forEach((point, i) => {
+          // Draw point
+          ctx.beginPath();
+          ctx.arc(point.x / scaleX, point.y / scaleY, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Draw connecting line
+          if (i > 0) {
+            ctx.beginPath();
+            ctx.moveTo(newRoi[i - 1].x / scaleX, newRoi[i - 1].y / scaleY);
+            ctx.lineTo(point.x / scaleX, point.y / scaleY);
+            ctx.stroke();
+          }
+        });
+
+        // Connect back to first point if we have 3 or more points
+        if (newRoi.length >= 3) {
+          ctx.beginPath();
+          ctx.moveTo(newRoi[newRoi.length - 1].x / scaleX, newRoi[newRoi.length - 1].y / scaleY);
+          ctx.lineTo(newRoi[0].x / scaleX, newRoi[0].y / scaleY);
+          ctx.stroke();
+        }
+      }
+
       return newRoi;
     });
   };
@@ -344,9 +395,52 @@ const VideoPlayer: React.FC = () => {
     localStorage.setItem(`motion_settings_${activeCamera?.id}`, JSON.stringify(motionSettings));
   }, [motionSettings, activeCamera?.id]);
   
+  // Initialize ROI canvas when drawing mode changes
+  useEffect(() => {
+    if (isDrawingRoi && roiCanvasRef.current && videoRef.current) {
+      const canvas = roiCanvasRef.current;
+      const video = videoRef.current;
+      
+      // Match canvas size to video element size
+      const videoRect = video.getBoundingClientRect();
+      canvas.width = videoRect.width;
+      canvas.height = videoRect.height;
+      
+      // Draw semi-transparent overlay
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+  }, [isDrawingRoi]);
+  
+  // Load camera-specific ROI when camera changes
+  useEffect(() => {
+    if (!activeCamera?.id) return;
+    
+    // Load the ROI for the current camera
+    const savedRoi = localStorage.getItem(`roi_${activeCamera.id}`);
+    if (savedRoi) {
+      try {
+        const parsedRoi = JSON.parse(savedRoi);
+        setRoi(parsedRoi);
+        console.log(`Loaded ROI for camera ${activeCamera.id} with ${parsedRoi.length} points`);
+      } catch (e) {
+        console.error("Error loading ROI from localStorage:", e);
+        setRoi([]);
+      }
+    } else {
+      // No ROI for this camera
+      setRoi([]);
+    }
+  }, [activeCamera?.id]);
+
   // Initialize motion detection
   useEffect(() => {
-    if (!showMotionDetection || !videoRef.current || !canvasRef.current) return;
+    // Only run if we have valid references
+    if (!videoRef.current || !canvasRef.current) return;
     
     let lastProcessTime = 0;
     const PROCESS_INTERVAL = 100; // Process every 100ms for performance
@@ -510,8 +604,10 @@ const VideoPlayer: React.FC = () => {
           // Calculate motion percentage
           const motionPercentage = totalPixels > 0 ? (motionPixels / totalPixels) * 100 : 0;
           
-          // Update motion detected state
-          setMotionDetected(motionPercentage > motionSettings.minAreaPercent);
+          // Update motion detected state - only when motion detection is enabled
+          if (showMotionDetection) {
+            setMotionDetected(motionPercentage > motionSettings.minAreaPercent);
+          }
           
           // Draw the mask if enabled
           if (motionSettings.showMask) {
@@ -566,7 +662,7 @@ const VideoPlayer: React.FC = () => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [showMotionDetection, roi, motionSettings, activeCamera?.id]);
+  }, [roi, motionSettings, showMotionDetection, activeCamera?.id]); // Make sure detection runs when showMotionDetection changes
   
   return (
     <div className="relative w-full h-full select-none">
@@ -591,20 +687,20 @@ const VideoPlayer: React.FC = () => {
         <source src={videoSource} type="video/mp4" />
       </video>
       
-      {/* Motion detection canvas overlay */}
+      {/* Motion detection canvas overlay - Show based on mask setting, not eye toggle */}
       <canvas 
         ref={canvasRef}
         className="absolute top-0 left-0 w-full h-full object-cover pointer-events-none"
-        style={{ display: showMotionDetection ? 'block' : 'none' }}
+        style={{ display: motionSettings.showMask ? 'block' : 'none' }}
       />
       
-      {/* ROI drawing canvas */}
+      {/* ROI drawing canvas - Increased z-index to be above controls when in drawing mode */}
       {isDrawingRoi && (
-        <div className="absolute top-0 left-0 w-full h-full">
+        <div className="absolute top-0 left-0 w-full h-full z-50">
           <canvas
+            ref={roiCanvasRef}
             onClick={handleCanvasClick}
             className="w-full h-full cursor-crosshair"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
           />
           <div className="absolute top-16 left-4 bg-black/70 p-2 rounded text-white text-sm">
             Click to add points to ROI polygon. Click "Finish" when done.
@@ -618,8 +714,8 @@ const VideoPlayer: React.FC = () => {
         </div>
       )}
 
-      {/* Controls */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+      {/* Controls - Lower z-index than the ROI canvas when in drawing mode */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 z-40">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Play/Pause button */}

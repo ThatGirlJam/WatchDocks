@@ -6,6 +6,7 @@ import Header from "./components/Header";
 import Dashboard from "./pages/Dashboard";
 import Details from "./pages/Details";
 import History from "./pages/History"; // Import the new History page
+import Review from "./pages/Review";
 
 function App() {
   return (
@@ -16,7 +17,9 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/details" element={<Details />} />
-            <Route path="/history" element={<History />} /> {/* Add the new route */}
+            <Route path="/history" element={<History />} />{" "}
+            {/* Add the new route */}
+            <Route path="/review" element={<Review />} />
           </Routes>
         </div>
       </Router>

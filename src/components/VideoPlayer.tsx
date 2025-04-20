@@ -28,6 +28,13 @@ interface TrackedObject {
   isLoitering: boolean;
 }
 
+// Add this at the file level, outside any component
+declare global {
+  interface Window {
+    _trackedObjects?: TrackedObject[];
+  }
+}
+
 const VideoPlayer: React.FC = () => {
   const { state, dispatch } = useApp();
   const activeCamera = state.cameras.find(camera => camera.id === state.activeCamera);
@@ -795,6 +802,9 @@ const VideoPlayer: React.FC = () => {
                 dispatch({ type: 'SET_LOITERING_STATUS', payload: loiteringFound });
               }
               
+              // Make tracked objects available globally for the capture function
+              window._trackedObjects = updatedObjects;
+              
               return updatedObjects;
             });
           }
@@ -1249,6 +1259,71 @@ export const captureCurrentFrame = (): Promise<string> => {
       // Convert to base64 image data
       // Remove the data:image/png;base64, prefix
       const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+      resolve(imageData);
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
+// Add this new function below the existing captureCurrentFrame function
+
+export const captureHighlightedFrame = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const video = document.querySelector('video');
+    
+    if (!video) {
+      reject(new Error('Video element not found'));
+      return;
+    }
+
+    try {
+      // Create a new canvas for the combined output
+      const outputCanvas = document.createElement('canvas');
+      outputCanvas.width = video.videoWidth;
+      outputCanvas.height = video.videoHeight;
+      
+      const ctx = outputCanvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not create canvas context'));
+        return;
+      }
+      
+      // First draw the video frame
+      ctx.drawImage(video, 0, 0, outputCanvas.width, outputCanvas.height);
+      
+      // Get the tracked objects that are loitering
+      const loiteringObjects = window._trackedObjects?.filter(obj => obj.isLoitering) || [];
+      
+      // Only draw loitering objects (orange frames), not blue tracking frames
+      if (loiteringObjects.length > 0) {
+        // Draw each loitering object with orange/red highlight
+        loiteringObjects.forEach(obj => {
+          // Use flashing effect like in the main visualization
+          const isFlashing = (Date.now() % 1000) < 500;
+          ctx.strokeStyle = isFlashing ? 'rgba(255, 0, 0, 0.8)' : 'rgba(255, 165, 0, 0.8)';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+          
+          // Add loitering warning label
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+          ctx.fillRect(obj.x, obj.y - 25, 95, 20);
+          ctx.fillStyle = isFlashing ? 'rgba(255, 0, 0, 1)' : 'rgba(255, 165, 0, 1)';
+          ctx.font = 'bold 12px Arial';
+          ctx.fillText('⚠️ LOITERING', obj.x + 5, obj.y - 10);
+        });
+        
+        // Add "LOITERING DETECTED" text for emphasis
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+        ctx.fillRect(outputCanvas.width - 230, 10, 220, 40);
+        
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText(`⚠️ LOITERING DETECTED`, outputCanvas.width - 220, 35);
+      }
+      
+      // Convert to base64 image data
+      const imageData = outputCanvas.toDataURL('image/jpeg', 0.8).split(',')[1];
       resolve(imageData);
     } catch (err) {
       reject(err);

@@ -64,7 +64,7 @@ def generate_warning():
         # Build prompt parts
         prompt_text = (
             "Generate ONLY a brief, direct security warning message (30-50 words max) to be announced over speakers "
-            "to a person near the bike rack in this image. Mention their distinctive clothing. "
+            "to a person/persons who are identified to be loitering near the bike rack in this image. Mention their distinctive clothing. "
             "No analysis, no headers, no explanations - just the warning announcement itself. "
             "Make it clear they're being monitored by security cameras."
         )

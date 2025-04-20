@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { captureCurrentFrame as captureFrame } from './VideoPlayer'; // Rename the import
+import { captureHighlightedFrame } from './VideoPlayer'; // Rename the import
 
 const BikeDockStatus: React.FC = () => {
   const { state } = useApp();
@@ -33,8 +33,8 @@ const BikeDockStatus: React.FC = () => {
     try {
       setIsSendingWarning(true);
       
-      // Get current video frame - use the imported function directly
-      const imageData = await captureFrame();
+      // Get current video frame with loitering highlights if available
+      const imageData = await captureHighlightedFrame();
       
       if (!imageData) {
         console.error("Failed to capture video frame");

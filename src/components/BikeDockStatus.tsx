@@ -90,8 +90,13 @@ const BikeDockStatus: React.FC = () => {
     (a) => a.status === "resolved"
   ).length;
 
-  // Parking space stats summaries
-  const percentageDocksFull = 50;
+  let percentageDocksFull = 50;
+
+  if (state.activeCamera === "cam2") {
+    percentageDocksFull = 52;
+  } else {
+    percentageDocksFull = 78;
+  }
   const percentageDocksEmpty = 100 - percentageDocksFull;
 
   return (

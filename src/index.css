@@ -2,3 +2,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --chart-grid-color: #ccc;
+  --chart-text-color: #333;
+  --chart-axis-color: #333;
+  --tooltip-bg: #fff;
+}
+
+.dark {
+  --chart-grid-color: #666; /* Brighter grid lines */
+  --chart-text-color: #e5e7eb; /* Brighter text */
+  --chart-axis-color: #999; /* Brighter axis */
+  --tooltip-bg: #1f2937;
+}

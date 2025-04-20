@@ -25,8 +25,10 @@ type HeatmapData = {
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
 
+// Update the getColor function to support dark mode
 function getColor(value: number) {
-  const colors = [
+  // Different color scales for light/dark modes
+  const lightColors = [
     "bg-gray-100",
     "bg-green-100",
     "bg-green-300",
@@ -34,7 +36,20 @@ function getColor(value: number) {
     "bg-green-700",
     "bg-green-900",
   ];
-  return colors[Math.min(value, colors.length - 1)];
+  
+  const darkColors = [
+    "dark:bg-gray-800",
+    "dark:bg-green-900",
+    "dark:bg-green-800",
+    "dark:bg-green-700", 
+    "dark:bg-green-600",
+    "dark:bg-green-500",
+  ];
+  
+  const lightClass = lightColors[Math.min(value, lightColors.length - 1)];
+  const darkClass = darkColors[Math.min(value, darkColors.length - 1)];
+  
+  return `${lightClass} ${darkClass}`;
 }
 
 export default function Review() {
@@ -95,16 +110,43 @@ export default function Review() {
       {/* Line Chart */}
       <Card className="col-span-1 md:col-span-2" title="Review Statistics">
         <CardContent className="p-4">
-          <h2 className="text-xl font-semibold mb-4">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
             📈 Alert Activity by Location (Today)
           </h2>
           <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={activityData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
+            <LineChart 
+              data={activityData}
+              style={{ 
+                // Add a conditional style for dark mode
+                fontSize: '0.875rem',
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid-color, #ccc)" />
+              <XAxis 
+                dataKey="time" 
+                tick={{ fill: 'var(--chart-text-color, #333)' }}
+                stroke="white"
+                tickLine={{ stroke: 'white' }}
+                axisLine={{ stroke: 'white', strokeWidth: 1.5 }}
+              />
+              <YAxis 
+                tick={{ fill: 'var(--chart-text-color, #333)' }} 
+                stroke="white"
+                tickLine={{ stroke: 'white' }}
+                axisLine={{ stroke: 'white', strokeWidth: 1.5 }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'var(--tooltip-bg, #fff)',
+                  color: 'var(--chart-text-color, #333)',
+                  border: '1px solid var(--chart-grid-color, #ccc)',
+                }} 
+              />
+              <Legend 
+                wrapperStyle={{
+                  color: 'var(--chart-text-color, #333)',
+                }}
+              />
               <Line
                 type="monotone"
                 dataKey="Front Entrance"
@@ -125,7 +167,7 @@ export default function Review() {
       {/* Heatmap */}
       <Card className="col-span-1 md:col-span-2" title="Monthly Heatmap">
         <CardContent className="p-4">
-          <h2 className="text-xl font-semibold mb-4">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">
             🔥 Alert Activity by Location (Monthly)
           </h2>
 
@@ -139,7 +181,7 @@ export default function Review() {
                   {hours.map((hour) => (
                     <div
                       key={hour}
-                      className="text-center font-medium text-gray-600"
+                      className="text-center font-medium text-gray-600 dark:text-gray-400"
                     >
                       {hour}
                     </div>
@@ -150,7 +192,7 @@ export default function Review() {
                     <>
                       <div
                         key={`day-${rowIndex}`}
-                        className="text-right font-medium pr-2 text-gray-700"
+                        className="text-right font-medium pr-2 text-gray-700 dark:text-gray-300"
                       >
                         {days[rowIndex]}
                       </div>

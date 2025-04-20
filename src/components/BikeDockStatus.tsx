@@ -8,10 +8,15 @@ import {
   ArrowUpRight,
   BarChart4,
 } from "lucide-react";
-import { Link } from "react-router-dom"; // Import Link
+import { useNavigate } from "react-router-dom"; // Import Link
 
 const BikeDockStatus: React.FC = () => {
   const { state } = useApp();
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate("/details");
+  };
 
   // Alert stats summaries
   const totalAlerts = state.alerts.length;
@@ -34,11 +39,12 @@ const BikeDockStatus: React.FC = () => {
           <Activity className="h-5 w-5" />
           Bike Dock Status
         </h2>
-        <button className="text-blue-500 text-sm flex items-center gap-1 hover:text-blue-600 transition-colors">
+        <button
+          onClick={handleClick}
+          className="text-blue-500 text-sm flex items-center gap-1 hover:text-blue-600 transition-colors"
+        >
           <span>Details</span>
-          <Link to="/details">
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
+          <ArrowUpRight className="h-4 w-4" />
         </button>
       </div>
 

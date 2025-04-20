@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Bell, Settings, Shield } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Bell, Settings, Shield, Clock, Home, Info } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import SettingsModal from './SettingsModal';
 import NotificationsModal from './NotificationsModal';
@@ -9,6 +10,7 @@ const Header: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const newAlertsCount = state.alerts.filter(alert => alert.status === 'new').length;
+  const location = useLocation();
 
   return (
     <>
@@ -18,6 +20,31 @@ const Header: React.FC = () => {
             <Shield className="h-8 w-8 text-blue-500" />
             <h1 className="text-xl font-bold">BikeGuard</h1>
           </div>
+
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <Link 
+              to="/" 
+              className={`flex items-center space-x-1 hover:text-blue-400 ${location.pathname === '/' ? 'text-blue-400' : 'text-gray-300'}`}
+            >
+              <Home className="h-4 w-4" />
+              <span>Dashboard</span>
+            </Link>
+            <Link 
+              to="/history" 
+              className={`flex items-center space-x-1 hover:text-blue-400 ${location.pathname === '/history' ? 'text-blue-400' : 'text-gray-300'}`}
+            >
+              <Clock className="h-4 w-4" />
+              <span>History</span>
+            </Link>
+            <Link 
+              to="/details" 
+              className={`flex items-center space-x-1 hover:text-blue-400 ${location.pathname === '/details' ? 'text-blue-400' : 'text-gray-300'}`}
+            >
+              <Info className="h-4 w-4" />
+              <span>Details</span>
+            </Link>
+          </nav>
 
           <div className="flex items-center space-x-2">
             <div className="flex items-center mr-4">
@@ -50,6 +77,31 @@ const Header: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* Mobile Navigation */}
+      <div className="md:hidden bg-gray-800 text-white py-2 px-4 flex justify-between">
+        <Link 
+          to="/" 
+          className={`flex flex-col items-center ${location.pathname === '/' ? 'text-blue-400' : 'text-gray-300'}`}
+        >
+          <Home className="h-5 w-5" />
+          <span className="text-xs">Home</span>
+        </Link>
+        <Link 
+          to="/history" 
+          className={`flex flex-col items-center ${location.pathname === '/history' ? 'text-blue-400' : 'text-gray-300'}`}
+        >
+          <Clock className="h-5 w-5" />
+          <span className="text-xs">History</span>
+        </Link>
+        <Link 
+          to="/details" 
+          className={`flex flex-col items-center ${location.pathname === '/details' ? 'text-blue-400' : 'text-gray-300'}`}
+        >
+          <Info className="h-5 w-5" />
+          <span className="text-xs">Details</span>
+        </Link>
+      </div>
 
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
       <NotificationsModal isOpen={showNotifications} onClose={() => setShowNotifications(false)} />

@@ -4,7 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
 import Header from "./components/Header";
 import Dashboard from "./pages/Dashboard";
-import Details from "./pages/Details"; // <== create this page too
+import Details from "./pages/Details";
+import History from "./pages/History"; // Import the new History page
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/details" element={<Details />} />
+            <Route path="/history" element={<History />} /> {/* Add the new route */}
           </Routes>
         </div>
       </Router>

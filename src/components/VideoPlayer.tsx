@@ -47,7 +47,7 @@ const VideoPlayer: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const roiCanvasRef = useRef<HTMLCanvasElement>(null); // New ref for ROI drawing
-  const behindCounterRef = useRef<NodeJS.Timeout | null>(null);
+  const behindCounterRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const previousFrameRef = useRef<ImageData | null>(null);
 
@@ -95,6 +95,37 @@ const VideoPlayer: React.FC = () => {
     
     // This will trigger the onMeta event which will set the correct time
   }, [videoSource, activeCamera?.id]);
+  
+  // Cleanup effect - runs when component unmounts or before re-running effect
+  useEffect(() => {
+    return () => {
+      // Clean up animation frame
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      // Clean up interval
+      if (behindCounterRef.current !== null) {
+        clearInterval(behindCounterRef.current);
+        behindCounterRef.current = null;
+      }
+      
+      // Stop video playback
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      
+      // Reset state
+      setIsPlaying(false);
+      previousFrameRef.current = null;
+      
+      // Clear any tracked objects if they exist
+      if (window._trackedObjects) {
+        window._trackedObjects = [];
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const vid = videoRef.current;
@@ -155,7 +186,9 @@ const VideoPlayer: React.FC = () => {
     };
   }, [maxSeek, fixedDelaySeconds]);
 
-  // Handle pause/play counter effect
+  // Handle pause/play counter effect - split into two separate effects to avoid circular dependencies
+  
+  // Effect 1: Handle starting/stopping the interval when play state changes
   useEffect(() => {
     // Clear any existing interval
     if (behindCounterRef.current) {
@@ -168,24 +201,32 @@ const VideoPlayer: React.FC = () => {
       behindCounterRef.current = setInterval(() => {
         setPausedBehindSeconds(prev => prev + 1);
       }, 1000);
-    } else if (pausedBehindSeconds > 0) {
-      // When resuming play, convert accumulated pause time to fixed delay
-      // to maintain the correct delay
-      if (fixedDelaySeconds === null) {
-        setFixedDelaySeconds(pausedBehindSeconds);
-      } else {
-        setFixedDelaySeconds(fixedDelaySeconds + pausedBehindSeconds);
-      }
-      setPausedBehindSeconds(0);
     }
 
     // Cleanup on unmount
     return () => {
       if (behindCounterRef.current) {
         clearInterval(behindCounterRef.current);
+        behindCounterRef.current = null;
       }
     };
-  }, [isPlaying, pausedBehindSeconds, fixedDelaySeconds]);
+  }, [isPlaying]);
+  
+  // Effect 2: Handle converting pause time to fixed delay when resuming playback
+  useEffect(() => {
+    // Only run this logic when transitioning from paused to playing
+    if (isPlaying && pausedBehindSeconds > 0) {
+      // When resuming play, convert accumulated pause time to fixed delay
+      // to maintain the correct delay - use callback form to avoid dependency on current value
+      setFixedDelaySeconds(prev => {
+        const newValue = prev === null ? pausedBehindSeconds : prev + pausedBehindSeconds;
+        return newValue;
+      });
+      
+      // Reset the accumulated pause time
+      setPausedBehindSeconds(0);
+    }
+  }, [isPlaying, pausedBehindSeconds]);
 
   // Toggle play/pause
   const togglePlay = () => {
@@ -508,6 +549,12 @@ const VideoPlayer: React.FC = () => {
     }
   }, [activeCamera?.id]);
 
+  // Separate effect just to reset the dwellMap when camera changes
+  useEffect(() => {
+    // Initialize or reset dwell map when camera changes
+    setDwellMap(new Map());
+  }, [activeCamera?.id]);
+
   // Initialize motion detection
   useEffect(() => {
     // Only run if we have valid references
@@ -517,9 +564,6 @@ const VideoPlayer: React.FC = () => {
     const PROCESS_INTERVAL = 50; // More frequent processing (was 100ms)
     let lastCleanupTime = 0;
     const CLEANUP_INTERVAL = 2000; // Clean up inactive objects every 2 seconds now
-    
-    // Initialize or reset dwell map when camera changes
-    setDwellMap(new Map());
     
     const detectMotion = (time: number) => {
       const currentTime = performance.now();
@@ -995,7 +1039,7 @@ const VideoPlayer: React.FC = () => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [roi, motionSettings, showMotionDetection, activeCamera?.id, loiteringThreshold, loiteringMinSize, showAllTrackedObjects, showDebugInfo, persistentTracking, dwellMap, showDecayingObjects]); 
+  }, [roi, motionSettings, showMotionDetection, activeCamera?.id, loiteringThreshold, loiteringMinSize, showAllTrackedObjects, showDebugInfo, persistentTracking, showDecayingObjects]); 
   
   return (
     <div className="relative w-full h-full select-none">

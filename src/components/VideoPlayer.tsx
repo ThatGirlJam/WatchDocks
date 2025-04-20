@@ -322,8 +322,8 @@ const VideoPlayer: React.FC = () => {
 
   // New: State for tracked objects and loitering detection
   const [trackedObjects, setTrackedObjects] = useState<TrackedObject[]>([]);
-  // Even lower threshold for testing - now just 5 seconds
-  const [loiteringThreshold] = useState(5000); // 5 seconds for loitering detection
+  // Set loitering threshold to 45 seconds
+  const [loiteringThreshold] = useState(45000); // 45 seconds for loitering detection
   const [loiteringDetected, setLoiteringDetected] = useState(false);
   // Lower minimum size threshold even further
   const [loiteringMinSize] = useState(50); 
@@ -1147,7 +1147,59 @@ const VideoPlayer: React.FC = () => {
               </button>
             </div>
             
-            {/* ...existing motion settings... */}
+            {/* Motion detection settings sliders */}
+            <div className="col-span-1 md:col-span-3 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-white text-xs flex justify-between">
+                    <span>Threshold: {motionSettings.threshold}</span>
+                    <span className="text-gray-400">(Higher = less sensitive)</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    value={motionSettings.threshold}
+                    onChange={(e) => setMotionSettings({
+                      ...motionSettings,
+                      threshold: Number(e.target.value)
+                    })}
+                    className="w-full accent-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-white text-xs flex justify-between">
+                    <span>Min Area %: {motionSettings.minAreaPercent}</span>
+                    <span className="text-gray-400">(Higher = requires more motion)</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="20"
+                    value={motionSettings.minAreaPercent}
+                    onChange={(e) => setMotionSettings({
+                      ...motionSettings,
+                      minAreaPercent: Number(e.target.value)
+                    })}
+                    className="w-full accent-green-500"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <label className="text-white text-xs flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={motionSettings.showMask}
+                      onChange={(e) => setMotionSettings({
+                        ...motionSettings,
+                        showMask: e.target.checked
+                      })}
+                      className="accent-red-500"
+                    />
+                    Show detection mask
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

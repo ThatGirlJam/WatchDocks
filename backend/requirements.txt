@@ -4,3 +4,4 @@ gTTS
 pillow
 flask_cors
 pygame
+pymongo

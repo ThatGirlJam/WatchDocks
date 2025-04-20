@@ -9,10 +9,63 @@ from flask_cors import CORS
 import google.generativeai as genai
 from gtts import gTTS
 import pygame
+from pymongo import MongoClient
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
 pygame.mixer.init()
+
+mongo_uri = os.getenv("MONGODB_URI")
+mongo_client = MongoClient(mongo_uri)
+db = mongo_client["Cluster0"]
+alerts_collection = db["alerts"]
+
+@app.route("/alerts", methods=["POST"])
+def store_alert():
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = {"id", "timestamp", "imageUrl", "confidence", "location", "status"}
+        if not required_fields.issubset(data):
+            return jsonify({"error": "Missing one or more required fields"}), 400
+
+        # Ensure status is valid
+        valid_statuses = {"new", "reviewing", "resolved", "false-alarm"}
+        if data["status"] not in valid_statuses:
+            return jsonify({"error": f"Invalid status: {data['status']}"}), 400
+
+        # Parse timestamp
+        try:
+            data["timestamp"] = datetime.fromisoformat(data["timestamp"])
+        except Exception:
+            return jsonify({"error": "Invalid timestamp format"}), 400
+
+        # Insert into MongoDB
+        alerts_collection.insert_one(data)
+        return jsonify({"message": "Alert stored successfully"}), 201
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": "Internal Server Error"}), 500
+
+@app.route("/alerts", methods=["GET"])
+def get_alerts():
+    try:
+        # Fetch all alerts
+        alerts = list(alerts_collection.find())
+
+        # Convert ObjectId and datetime to string for JSON serialization
+        for alert in alerts:
+            alert["_id"] = str(alert["_id"])
+            alert["timestamp"] = alert["timestamp"].isoformat()
+
+        return jsonify(alerts), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": "Internal Server Error"}), 500
 
 # Configure Gemini API
 genai.configure(api_key=os.environ["GOOGLE_API_KEY"])

@@ -20,14 +20,21 @@ const History: React.FC = () => {
   const filteredAlerts = state.alerts
     .filter((alert) => {
       // Filter by status
-      if (statusFilter !== "all" && alert.status !== statusFilter) return false;
+      if (
+        statusFilter.toLowerCase() !== "all" &&
+        alert.status.toLowerCase() !== statusFilter.toLowerCase()
+      )
+        return false;
 
       // Filter by location
-      if (locationFilter !== "all" && alert.location !== locationFilter)
+      if (
+        locationFilter.toLowerCase() !== "all" &&
+        alert.location.toLowerCase() !== locationFilter.toLowerCase()
+      )
         return false;
 
       // Filter by date (simple implementation - would need refinement for real app)
-      if (dateFilter !== "all") {
+      if (dateFilter.toLowerCase() !== "all") {
         const today = new Date();
         const alertDate = new Date(alert.timestamp);
 
@@ -85,6 +92,8 @@ const History: React.FC = () => {
   };
   // Inside AlertsList component
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
+
+  console.log(filteredAlerts);
 
   return (
     <div className="container mx-auto px-4 py-6">

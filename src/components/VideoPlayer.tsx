@@ -15,6 +15,19 @@ interface MotionSettings {
 type Point = { x: number, y: number };
 type ROI = Point[];
 
+// New: Interface for tracked objects
+interface TrackedObject {
+  id: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  firstDetectedAt: number; // timestamp
+  lastSeenAt: number; // timestamp
+  frames: number; // number of consecutive frames detected
+  isLoitering: boolean;
+}
+
 const VideoPlayer: React.FC = () => {
   const { state } = useApp();
   const activeCamera = state.cameras.find(camera => camera.id === state.activeCamera);
@@ -79,7 +92,7 @@ const VideoPlayer: React.FC = () => {
       const d = vid.duration;
       setDuration(d);
       // Start at 80% of the video for demo purposes
-      const startPoint = d * 0.75;
+      const startPoint = d * 0.8;
       vid.currentTime = startPoint;
       setCurrentTime(startPoint);
       setMaxSeek(startPoint);
@@ -307,6 +320,40 @@ const VideoPlayer: React.FC = () => {
   const [motionMask, setMotionMask] = useState<ImageData | null>(null);
   const [activeMotionAreas, setActiveMotionAreas] = useState<{x: number, y: number, w: number, h: number}[]>([]);
 
+  // New: State for tracked objects and loitering detection
+  const [trackedObjects, setTrackedObjects] = useState<TrackedObject[]>([]);
+  // Set loitering threshold to 45 seconds
+  const [loiteringThreshold] = useState(45000); // 45 seconds for loitering detection
+  const [loiteringDetected, setLoiteringDetected] = useState(false);
+  // Lower minimum size threshold even further
+  const [loiteringMinSize] = useState(50); 
+  
+  // Debugging flags to better understand the tracking
+  const [showAllTrackedObjects, setShowAllTrackedObjects] = useState(true);
+  const [showDebugInfo, setShowDebugInfo] = useState(true);
+  const [persistentTracking, setPersistentTracking] = useState(true);
+  const [showDecayingObjects, setShowDecayingObjects] = useState(true);
+  
+  // Track areas where people spend time - like a heatmap
+  const [dwellMap, setDwellMap] = useState<Map<string, number>>(new Map());
+
+  // More UI controls for debugging
+  const toggleShowAllTrackedObjects = () => {
+    setShowAllTrackedObjects(!showAllTrackedObjects);
+  };
+  
+  const toggleDebugInfo = () => {
+    setShowDebugInfo(!showDebugInfo);
+  };
+  
+  const togglePersistentTracking = () => {
+    setPersistentTracking(!persistentTracking);
+  };
+
+  const toggleShowDecayingObjects = () => {
+    setShowDecayingObjects(!showDecayingObjects);
+  };
+
   // Toggle motion detection overlay
   const toggleMotionDetection = () => {
     setShowMotionDetection(!showMotionDetection);
@@ -443,10 +490,26 @@ const VideoPlayer: React.FC = () => {
     if (!videoRef.current || !canvasRef.current) return;
     
     let lastProcessTime = 0;
-    const PROCESS_INTERVAL = 100; // Process every 100ms for performance
+    const PROCESS_INTERVAL = 50; // More frequent processing (was 100ms)
+    let lastCleanupTime = 0;
+    const CLEANUP_INTERVAL = 2000; // Clean up inactive objects every 2 seconds now
+    
+    // Initialize or reset dwell map when camera changes
+    setDwellMap(new Map());
     
     const detectMotion = (time: number) => {
-      if (time - lastProcessTime > PROCESS_INTERVAL) {
+      const currentTime = performance.now();
+      
+      // Handle object cleanup less frequently
+      if (currentTime - lastCleanupTime > CLEANUP_INTERVAL) {
+        // More persistent tracking - keep objects for 20 seconds instead of 10
+        setTrackedObjects(prevObjects => 
+          prevObjects.filter(obj => currentTime - obj.lastSeenAt < (persistentTracking ? 20000 : 10000))
+        );
+        lastCleanupTime = currentTime;
+      }
+      
+      if (currentTime - lastProcessTime > PROCESS_INTERVAL) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         
@@ -609,6 +672,117 @@ const VideoPlayer: React.FC = () => {
             setMotionDetected(motionPercentage > motionSettings.minAreaPercent);
           }
           
+          // After detecting motion areas, track objects across frames with improved tracking
+          if (motionAreas.length > 0) {
+            setTrackedObjects(prevObjects => {
+              // Create a copy of existing objects
+              const updatedObjects = [...prevObjects];
+              let loiteringFound = false;
+
+              // First, update the dwell map
+              const cellSize = 20; // 20x20 pixel grid for dwell tracking
+              const newDwellMap = new Map(dwellMap);
+              
+              // Add motion areas to dwell map
+              motionAreas.forEach(area => {
+                // Only track larger areas
+                if (area.w * area.h < loiteringMinSize) return;
+                
+                // Center point
+                const centerX = Math.floor((area.x + area.w / 2) / cellSize);
+                const centerY = Math.floor((area.y + area.h / 2) / cellSize);
+                const cellKey = `${centerX},${centerY}`;
+                
+                // Increment dwell time for this cell
+                newDwellMap.set(cellKey, (newDwellMap.get(cellKey) || 0) + 1);
+              });
+              setDwellMap(newDwellMap);
+              
+              // Match detected areas with existing tracked objects
+              motionAreas.forEach(area => {
+                // Skip excessively small motion areas - even more permissive
+                if (area.w * area.h < loiteringMinSize) return;
+                
+                // Area center point
+                const centerX = area.x + area.w / 2;
+                const centerY = area.y + area.h / 2;
+                
+                // Find if this area matches any existing tracked object
+                let matched = false;
+                let bestMatch = null;
+                let bestDistance = Infinity;
+                
+                // First pass: find the best matching object based on distance and size similarity
+                for (const obj of updatedObjects) {
+                  const objCenterX = obj.x + obj.w / 2;
+                  const objCenterY = obj.y + obj.h / 2;
+                  
+                  // Distance between centers
+                  const distance = Math.sqrt(
+                    Math.pow(centerX - objCenterX, 2) + Math.pow(centerY - objCenterY, 2)
+                  );
+                  
+                  // Size similarity (0 = identical, higher = more different)
+                  const sizeDiff = Math.abs(area.w * area.h - obj.w * obj.h) / Math.max(1, obj.w * obj.h);
+                  
+                  // Much more lenient matching - distance matters more than size
+                  const matchScore = distance * 2 + (sizeDiff * 20); 
+                  
+                  // VERY permissive matching with large max distance
+                  // Allow matching if distance is less than 2.5x the average dimension
+                  const maxDistance = ((area.w + area.h + obj.w + obj.h) / 4) * 2.5;
+                  
+                  if (distance < maxDistance && matchScore < bestDistance) {
+                    bestMatch = obj;
+                    bestDistance = matchScore;
+                  }
+                }
+                
+                // If we found a match, update it
+                if (bestMatch) {
+                  // Update with more aggressive exponential moving average for tracking
+                  const alpha = 0.5; // 0.5 = balanced between old and new position
+                  bestMatch.x = alpha * area.x + (1 - alpha) * bestMatch.x;
+                  bestMatch.y = alpha * area.y + (1 - alpha) * bestMatch.y;
+                  bestMatch.w = alpha * area.w + (1 - alpha) * bestMatch.w;
+                  bestMatch.h = alpha * area.h + (1 - alpha) * bestMatch.h;
+                  bestMatch.lastSeenAt = currentTime;
+                  bestMatch.frames++;
+                  
+                  // Check if it's loitering with lower frame threshold
+                  if (bestMatch.frames > 5 && currentTime - bestMatch.firstDetectedAt > loiteringThreshold) {
+                    bestMatch.isLoitering = true;
+                    loiteringFound = true;
+                  }
+                  
+                  matched = true;
+                }
+                
+                // If no match found, create new tracked object
+                if (!matched) {
+                  const newObj: TrackedObject = {
+                    id: `obj-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    x: area.x,
+                    y: area.y,
+                    w: area.w,
+                    h: area.h,
+                    firstDetectedAt: currentTime,
+                    lastSeenAt: currentTime,
+                    frames: 1,
+                    isLoitering: false
+                  };
+                  
+                  updatedObjects.push(newObj);
+                }
+              });
+              
+              // Update loitering state
+              setLoiteringDetected(loiteringFound);
+              
+              return updatedObjects;
+            });
+          }
+          
           // Draw the mask if enabled
           if (motionSettings.showMask) {
             ctx.putImageData(diffMask, 0, 0);
@@ -626,6 +800,21 @@ const VideoPlayer: React.FC = () => {
               ctx.stroke();
             }
             
+            // Draw dwell map if debug is enabled
+            if (showDebugInfo) {
+              const cellSize = 20;
+              ctx.globalAlpha = 0.3;
+              dwellMap.forEach((count, key) => {
+                const [x, y] = key.split(',').map(Number);
+                const hue = Math.min(120, count * 5); // Red (0) to Green (120) based on count
+                const saturation = 100;
+                const lightness = 50;
+                ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+              });
+              ctx.globalAlpha = 1;
+            }
+            
             // Draw bounding boxes around motion areas
             ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
             ctx.lineWidth = 2;
@@ -633,12 +822,125 @@ const VideoPlayer: React.FC = () => {
               ctx.strokeRect(area.x, area.y, area.w, area.h);
             }
             
-            // Display motion percentage
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(10, 10, 200, 30);
+            // Draw ALL tracked objects with improved visualization
+            if (showAllTrackedObjects) {
+              trackedObjects.forEach(obj => {
+                const trackingTime = Math.round((currentTime - obj.firstDetectedAt) / 1000);
+                // Calculate decay - how old is this detection (0-1 where 1 is fresh, 0 is about to disappear)
+                const timeSinceLastSeen = currentTime - obj.lastSeenAt;
+                const maxDecayTime = persistentTracking ? 20000 : 10000; // How long before object is fully decayed
+                const decayFactor = Math.max(0, 1 - timeSinceLastSeen / maxDecayTime);
+                
+                // Skip objects with very few frames (likely noise)
+                if (obj.frames <= 2) return;
+                
+                // Skip decaying objects if the toggle is off
+                if (!showDecayingObjects && decayFactor < 0.7) return;
+                
+                // Draw tracking path as a tracer
+                if (showDebugInfo && obj.frames > 5) {
+                  const centerX = obj.x + obj.w / 2;
+                  const centerY = obj.y + obj.h / 2;
+                  const tracerSize = 4;
+                  
+                  // Fade the tracer based on decay
+                  ctx.fillStyle = obj.isLoitering ? 
+                    `rgba(255, 165, 0, ${decayFactor * 0.8})` : 
+                    `rgba(0, 255, 255, ${decayFactor * 0.8})`;
+                  ctx.fillRect(centerX - tracerSize/2, centerY - tracerSize/2, tracerSize, tracerSize);
+                }
+                
+                if (obj.isLoitering) {
+                  // Loitering objects get distinctive highlight with decay effect
+                  const colorIntensity = Math.floor(decayFactor * 255);
+                  ctx.strokeStyle = (Date.now() % 1000) < 500 ? 
+                    `rgba(255, ${colorIntensity}, 0, ${decayFactor})` : 
+                    `rgba(255, 0, 0, ${decayFactor})`;
+                  ctx.lineWidth = 4 * decayFactor; // Thinner line as it decays
+                } else {
+                  // Normal tracking - brightness based on track time AND decay
+                  const alpha = Math.min(0.8, 0.3 + (obj.frames / 100)) * decayFactor;
+                  ctx.strokeStyle = `rgba(0, 180, 255, ${alpha})`;
+                  ctx.lineWidth = 2 * decayFactor; // Thinner line as it decays
+                }
+                
+                // Only draw box if not too decayed
+                if (decayFactor > 0.2) {
+                  ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                }
+                
+                // Add timer above object with improved visibility
+                if (decayFactor > 0.4) { // Only show labels for less decayed objects
+                  // Background gets more transparent as it decays
+                  ctx.fillStyle = `rgba(0, 0, 0, ${0.8 * decayFactor})`;
+                  ctx.fillRect(obj.x, obj.y - 25, 95, 20);
+                  
+                  ctx.fillStyle = obj.isLoitering ? 
+                    `rgba(255, 165, 0, ${decayFactor})` : 
+                    `rgba(0, 255, 255, ${decayFactor})`;
+                  ctx.font = 'bold 12px Arial';
+                  
+                  // Show tracking time and frame count
+                  ctx.fillText(`${trackingTime}s (${obj.frames}f)`, obj.x + 5, obj.y - 10);
+                  
+                  // Add loitering warning if applicable
+                  if (obj.isLoitering && decayFactor > 0.6) { // Only show warning for fresh loitering
+                    ctx.fillStyle = `rgba(0, 0, 0, ${0.8 * decayFactor})`;
+                    ctx.fillRect(obj.x, obj.y - 50, 95, 20);
+                    ctx.fillStyle = (Date.now() % 1000) < 500 ? 
+                      `rgba(255, 0, 0, ${decayFactor})` : 
+                      `rgba(255, 165, 0, ${decayFactor})`;
+                    ctx.fillText('⚠️ LOITERING', obj.x + 5, obj.y - 35);
+                  }
+                }
+              });
+            }
+            
+            // Display motion percentage with enhanced info
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; // More opaque background
+            ctx.fillRect(10, 10, 220, 30);
             ctx.fillStyle = motionDetected ? 'red' : 'white';
-            ctx.font = '16px Arial';
+            ctx.font = 'bold 16px Arial';
             ctx.fillText(`Motion: ${motionPercentage.toFixed(1)}%`, 20, 30);
+            
+            // Add object counting and detailed stats
+            if (showDebugInfo) {
+              // Total tracked objects
+              const activeObjects = trackedObjects.filter(obj => obj.frames > 3).length;
+              const loiteringObjects = trackedObjects.filter(obj => obj.isLoitering).length;
+              
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+              ctx.fillRect(10, 45, 220, 70);
+              
+              ctx.fillStyle = 'white';
+              ctx.font = '14px Arial';
+              ctx.fillText(`Tracked: ${activeObjects} objects`, 20, 65);
+              ctx.fillText(`Threshold: ${loiteringThreshold/1000}s`, 20, 85);
+              
+              if (loiteringObjects > 0) {
+                ctx.fillStyle = 'orange';
+                ctx.fillText(`⚠️ Loitering: ${loiteringObjects}`, 20, 105);
+              } else {
+                ctx.fillStyle = 'lightgreen';
+                ctx.fillText(`No Loitering Detected`, 20, 105);
+              }
+            }
+            
+            // More visible loitering alert
+            if (loiteringDetected) {
+              // Flashing effect
+              if ((Date.now() % 1000) < 500) {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+              } else {
+                ctx.fillStyle = 'rgba(255, 140, 0, 0.7)';
+              }
+              
+              ctx.fillRect(canvas.width - 230, 10, 220, 40);
+              
+              ctx.fillStyle = 'white';
+              ctx.font = 'bold 18px Arial';
+              ctx.fillText(`⚠️ LOITERING ALERT!`, canvas.width - 220, 35);
+            }
           } else {
             // Clear canvas if mask display is disabled
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -662,7 +964,7 @@ const VideoPlayer: React.FC = () => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [roi, motionSettings, showMotionDetection, activeCamera?.id]); // Make sure detection runs when showMotionDetection changes
+  }, [roi, motionSettings, showMotionDetection, activeCamera?.id, loiteringThreshold, loiteringMinSize, showAllTrackedObjects, showDebugInfo, persistentTracking, dwellMap, showDecayingObjects]); 
   
   return (
     <div className="relative w-full h-full select-none">
@@ -679,6 +981,14 @@ const VideoPlayer: React.FC = () => {
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-red-500/80 px-3 py-1.5 rounded-full">
           <CircleDot className="h-4 w-4 text-white animate-pulse" />
           <span className="text-sm font-medium text-white">Motion Detected</span>
+        </div>
+      )}
+      
+      {/* Loitering alert indicator */}
+      {showMotionDetection && loiteringDetected && (
+        <div className="absolute top-16 right-4 z-10 flex items-center gap-2 bg-orange-500/80 px-3 py-1.5 rounded-full">
+          <CircleDot className="h-4 w-4 text-white animate-pulse" />
+          <span className="text-sm font-medium text-white">Loitering Detected</span>
         </div>
       )}
 
@@ -804,49 +1114,91 @@ const VideoPlayer: React.FC = () => {
           </div>
         </div>
         
-        {/* Motion detection settings (optional) */}
+        {/* Advanced debug controls */}
         {showMotionDetection && (
-          <div className="mt-2 grid grid-cols-2 gap-2 bg-black/60 p-2 rounded">
-            <div>
-              <label className="text-white text-xs">Threshold:</label>
-              <input
-                type="range"
-                min="10"
-                max="100"
-                value={motionSettings.threshold}
-                onChange={(e) => setMotionSettings({
-                  ...motionSettings,
-                  threshold: Number(e.target.value)
-                })}
-                className="w-full"
-              />
+          <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 bg-black/70 p-2 rounded">
+            <div className="col-span-1 md:col-span-3 flex flex-wrap gap-2">
+              <button 
+                onClick={toggleShowAllTrackedObjects} 
+                className={`text-xs px-2 py-1 rounded ${showAllTrackedObjects ? 'bg-blue-500' : 'bg-gray-500'}`}
+              >
+                {showAllTrackedObjects ? 'Hide Tracking' : 'Show Tracking'}
+              </button>
+              
+              <button 
+                onClick={toggleDebugInfo} 
+                className={`text-xs px-2 py-1 rounded ${showDebugInfo ? 'bg-blue-500' : 'bg-gray-500'}`}
+              >
+                {showDebugInfo ? 'Hide Debug Info' : 'Show Debug Info'}
+              </button>
+              
+              <button 
+                onClick={togglePersistentTracking} 
+                className={`text-xs px-2 py-1 rounded ${persistentTracking ? 'bg-green-500' : 'bg-gray-500'}`}
+              >
+                {persistentTracking ? 'High Persistence' : 'Normal Persistence'}
+              </button>
+              
+              <button 
+                onClick={toggleShowDecayingObjects} 
+                className={`text-xs px-2 py-1 rounded ${showDecayingObjects ? 'bg-purple-500' : 'bg-gray-500'}`}
+              >
+                {showDecayingObjects ? 'Show Fading Objects' : 'Hide Fading Objects'}
+              </button>
             </div>
-            <div>
-              <label className="text-white text-xs">Min Area %:</label>
-              <input
-                type="range"
-                min="1"
-                max="20"
-                value={motionSettings.minAreaPercent}
-                onChange={(e) => setMotionSettings({
-                  ...motionSettings,
-                  minAreaPercent: Number(e.target.value)
-                })}
-                className="w-full"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="text-white text-xs flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={motionSettings.showMask}
-                  onChange={(e) => setMotionSettings({
-                    ...motionSettings,
-                    showMask: e.target.checked
-                  })}
-                />
-                Show detection mask
-              </label>
+            
+            {/* Motion detection settings sliders */}
+            <div className="col-span-1 md:col-span-3 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-white text-xs flex justify-between">
+                    <span>Threshold: {motionSettings.threshold}</span>
+                    <span className="text-gray-400">(Higher = less sensitive)</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="10"
+                    max="100"
+                    value={motionSettings.threshold}
+                    onChange={(e) => setMotionSettings({
+                      ...motionSettings,
+                      threshold: Number(e.target.value)
+                    })}
+                    className="w-full accent-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-white text-xs flex justify-between">
+                    <span>Min Area %: {motionSettings.minAreaPercent}</span>
+                    <span className="text-gray-400">(Higher = requires more motion)</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="20"
+                    value={motionSettings.minAreaPercent}
+                    onChange={(e) => setMotionSettings({
+                      ...motionSettings,
+                      minAreaPercent: Number(e.target.value)
+                    })}
+                    className="w-full accent-green-500"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2">
+                  <label className="text-white text-xs flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={motionSettings.showMask}
+                      onChange={(e) => setMotionSettings({
+                        ...motionSettings,
+                        showMask: e.target.checked
+                      })}
+                      className="accent-red-500"
+                    />
+                    Show detection mask
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         )}

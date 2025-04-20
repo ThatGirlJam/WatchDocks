@@ -6,6 +6,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute"; // Assuming ProtectedRou
 import Header from "./components/Header";
 import Dashboard from "./pages/Dashboard";
 import Details from "./pages/Details";
+import ReportTheft from "./pages/ReportTheft";
 import History from "./pages/History";
 import Review from "./pages/Review";
 import { Auth0Provider } from "@auth0/auth0-react";
@@ -35,6 +36,7 @@ const AppLayout = () => {
           {/* Use key prop to force remount when path changes */}
           <Route path="/" element={<Dashboard key="dashboard" />} />
           <Route path="/details" element={<Details key="details" />} />
+          <Route path="/report-theft" element={<ReportTheft key="report-theft" />} />
 
           {/* Admin-only routes protected by ProtectedRoute */}
           <Route 

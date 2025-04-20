@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { CircleDot, Play, Pause, Volume2, VolumeX, Rewind, ArrowRight, FastForward, Eye, EyeOff } from "lucide-react";
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../auth/AuthContext';
 
 // Motion detection settings
 interface MotionSettings {
@@ -37,7 +38,11 @@ declare global {
 
 const VideoPlayer: React.FC = () => {
   const { state, dispatch } = useApp();
+  const { userRole } = useAuth();
   const activeCamera = state.cameras.find(camera => camera.id === state.activeCamera);
+  
+  // Check if user has admin privileges
+  const isAdmin = userRole === 'admin';
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1085,12 +1090,14 @@ const VideoPlayer: React.FC = () => {
             </button>
             
             {/* ROI setting button */}
-            <button
-              onClick={toggleRoiDrawingMode}
-              className={`text-xs px-2 py-1 rounded ${isDrawingRoi ? 'bg-red-500' : 'bg-gray-600'} text-white`}
-            >
-              {isDrawingRoi ? "Cancel" : "Set ROI"}
-            </button>
+            {isAdmin && (
+              <button
+                onClick={toggleRoiDrawingMode}
+                className={`text-xs px-2 py-1 rounded ${isDrawingRoi ? 'bg-red-500' : 'bg-gray-600'} text-white`}
+              >
+                {isDrawingRoi ? "Cancel" : "Set ROI"}
+              </button>
+            )}
           </div>
           
           {/* Navigation buttons and live indicator */}

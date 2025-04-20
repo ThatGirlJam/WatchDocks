@@ -41,6 +41,12 @@ const Header: React.FC = () => {
                   ? "text-blue-400"
                   : "text-gray-300"
               }`}
+              onClick={e => {
+                if (location.pathname !== "/history") {
+                  e.preventDefault();
+                  window.location.href = "/history";
+                }
+              }}
             >
               <Clock className="h-4 w-4" />
               <span>History</span>
@@ -52,6 +58,12 @@ const Header: React.FC = () => {
                   ? "text-blue-400"
                   : "text-gray-300"
               }`}
+              onClick={e => {
+                if (location.pathname !== "/details") {
+                  e.preventDefault();
+                  window.location.href = "/details";
+                }
+              }}
             >
               <Info className="h-4 w-4" />
               <span>Details</span>
@@ -110,6 +122,12 @@ const Header: React.FC = () => {
           className={`flex flex-col items-center ${
             location.pathname === "/history" ? "text-blue-400" : "text-gray-300"
           }`}
+          onClick={e => {
+            if (location.pathname !== "/history") {
+              e.preventDefault();
+              window.location.href = "/history";
+            }
+          }}
         >
           <Clock className="h-5 w-5" />
           <span className="text-xs">History</span>
@@ -119,6 +137,12 @@ const Header: React.FC = () => {
           className={`flex flex-col items-center ${
             location.pathname === "/details" ? "text-blue-400" : "text-gray-300"
           }`}
+          onClick={e => {
+            if (location.pathname !== "/details") {
+              e.preventDefault();
+              window.location.href = "/details";
+            }
+          }}
         >
           <Info className="h-5 w-5" />
           <span className="text-xs">Details</span>

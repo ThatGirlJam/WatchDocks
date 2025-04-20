@@ -1,19 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, CheckCircle, Camera, MapPin } from "lucide-react";
+import { AlertTriangle, CheckCircle, Camera, MapPin, User } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { useAuth } from "../auth/AuthContext";
 
 type ReportType = "witnessed" | "stolen" | "";
 
 const ReportTheft: React.FC = () => {
   const navigate = useNavigate();
   const { state, dispatch } = useApp();
+  const { isAuthenticated, user } = useAuth();
   const [formStep, setFormStep] = useState<number>(1);
   const [reportType, setReportType] = useState<ReportType>("");
   const [location, setLocation] = useState<string>("");
   const [bikeDescription, setBikeDescription] = useState<string>("");
   const [contactInfo, setContactInfo] = useState<string>("");
   const [incidentDetails, setIncidentDetails] = useState<string>("");
+  
+  // Pre-fill contact information when user is logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Format the contact information based on available user data
+      const userName = user.name || user.nickname || user.email?.split('@')[0] || '';
+      const userEmail = user.email || '';
+      
+      // Compile the contact information string
+      let userContactInfo = userName;
+      if (userEmail && userEmail !== userName) {
+        userContactInfo += userContactInfo ? ` | ${userEmail}` : userEmail;
+      }
+      
+      // Set the contact information if we have valid data
+      if (userContactInfo) {
+        setContactInfo(userContactInfo);
+      }
+    }
+  }, [isAuthenticated, user]);
   // We store photoFile for potential future implementation of cloud upload
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -210,14 +232,29 @@ const ReportTheft: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Contact Information
                   </label>
-                  <input
-                    type="text"
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white py-2 px-3"
-                    placeholder="Your name and phone number or email"
-                    value={contactInfo}
-                    onChange={(e) => setContactInfo(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <input
+                      type="text"
+                      className="block w-full pl-10 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white py-2 px-3"
+                      placeholder="Your name and phone number or email"
+                      value={contactInfo}
+                      onChange={(e) => setContactInfo(e.target.value)}
+                      required
+                    />
+                    {isAuthenticated && (
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <span className="text-xs text-green-600 dark:text-green-400">Auto-filled</span>
+                      </div>
+                    )}
+                  </div>
+                  {!isAuthenticated && (
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Sign in to auto-fill this information
+                    </p>
+                  )}
                 </div>
                 
                 <div>

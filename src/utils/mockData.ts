@@ -12,6 +12,8 @@ const generateMockCameras = (): Camera[] => [
     location: "Building A",
     status: "online",
     streamUrl: "https://example.com/stream/1",
+    latitude: 38.542944, // Converted from 38°32'34.6"N
+    longitude: -121.758889, // Converted from 121°45'32.0"W
   },
   {
     id: "cam2",
@@ -19,6 +21,8 @@ const generateMockCameras = (): Camera[] => [
     location: "Main Campus",
     status: "online",
     streamUrl: "https://example.com/stream/2",
+    latitude: 38.542944, // Converted from 38°32'34.6"N
+    longitude: -121.758889, // Converted from 121°45'32.0"W
   },
 ];
 

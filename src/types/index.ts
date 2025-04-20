@@ -15,6 +15,8 @@ export interface Camera {
   location: string;
   status: 'online' | 'offline';
   streamUrl?: string;
+  latitude?: number;   // Add this
+  longitude?: number;  // Add this
 }
 
 export interface AppState {

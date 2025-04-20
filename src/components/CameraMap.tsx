@@ -1,10 +1,23 @@
-import React from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import React, { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { Camera } from "../types";
 
 interface CameraMapProps {
   camera: Camera | undefined;
 }
+
+// This internal component handles map recenter when coordinates change
+const MapUpdater = ({ camera }: { camera: Camera }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (camera?.latitude && camera?.longitude) {
+      map.setView([camera.latitude, camera.longitude], map.getZoom());
+    }
+  }, [camera, map]);
+
+  return null;
+};
 
 const CameraMap: React.FC<CameraMapProps> = ({ camera }) => {
   if (!camera?.latitude || !camera?.longitude) {
@@ -27,6 +40,7 @@ const CameraMap: React.FC<CameraMapProps> = ({ camera }) => {
           {camera.name} <br /> {camera.location}
         </Popup>
       </Marker>
+      <MapUpdater camera={camera} />
     </MapContainer>
   );
 };

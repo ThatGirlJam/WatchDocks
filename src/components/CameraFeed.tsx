@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Camera } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { generateRandomAlert } from '../utils/mockData';
+import VideoPlayer from './VideoPlayer';
 
 const CameraFeed: React.FC = () => {
   const { state, dispatch } = useApp();
@@ -15,7 +16,16 @@ const CameraFeed: React.FC = () => {
     camera => camera.id === state.activeCamera
   );
 
-  // Mock video feed using canvas animation
+  // Special handling for Bike Rack North camera - use real video file
+  if (activeCamera && activeCamera.name === "Bike Rack North") {
+    return (
+      <div className="relative h-full bg-gray-900 rounded-lg overflow-hidden">
+        <VideoPlayer />
+      </div>
+    );
+  }
+
+  // Mock video feed using canvas animation for other cameras
   useEffect(() => {
     if (!canvasRef.current || !activeCamera || activeCamera.status !== 'online') return;
     

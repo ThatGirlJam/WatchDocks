@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useState } from "react";
 import { CircleDot, Play, Pause, Volume2, VolumeX, Rewind, ArrowRight, FastForward } from "lucide-react";
+import { useApp } from '../context/AppContext';
 
-/**
- * VideoPlayer simulates a true livestream with DVR-like navigation.
- * Users can go back in 30s increments and forward in 10s increments.
- */
 const VideoPlayer: React.FC = () => {
+  const { state } = useApp();
+  const activeCamera = state.cameras.find(camera => camera.id === state.activeCamera);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const behindCounterRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -30,6 +30,29 @@ const VideoPlayer: React.FC = () => {
   const HISTORY_SEC = 15 * 60;
   const REWIND_SEC = 30; // 30 second rewind
   const FORWARD_SEC = 10; // 10 second forward
+
+  // Select video file based on camera
+  const videoSource = activeCamera?.name === "Bike Rack North" 
+    ? "/videos/livestream_converted2.mp4" 
+    : "/videos/livestream_converted.mp4";
+    
+  // Effect to handle video source changes
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    
+    // Force reload when source changes
+    vid.load();
+    
+    // Reset all playback states
+    setIsLive(true);
+    setFixedDelaySeconds(null);
+    setPausedBehindSeconds(0);
+    setMaxSeek(0);
+    setCurrentTime(0);
+    
+    // This will trigger the onMeta event which will set the correct time
+  }, [videoSource, activeCamera?.id]);
 
   useEffect(() => {
     const vid = videoRef.current;
@@ -256,7 +279,7 @@ const VideoPlayer: React.FC = () => {
 
       {/* Video element */}
       <video ref={videoRef} className="w-full h-full object-cover" playsInline muted preload="auto">
-        <source src="/videos/livestream_converted.mp4" type="video/mp4" />
+        <source src={videoSource} type="video/mp4" />
       </video>
 
       {/* Controls */}

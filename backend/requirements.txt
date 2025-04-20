@@ -1,0 +1,6 @@
+flask 
+google-generativeai 
+gTTS 
+pillow
+flask_cors
+pygame

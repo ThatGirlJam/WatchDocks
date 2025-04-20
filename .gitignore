@@ -24,7 +24,13 @@ dist-ssr
 *.sw?
 
 .history/
+<<<<<<< HEAD
 .env
 *.mp4
 dataset/insecrawl/images
 public/videos_converted.mp4
+=======
+
+*.mp4
+dataset/insecrawl/images
+>>>>>>> ryan/dev-real

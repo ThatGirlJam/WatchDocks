@@ -1,9 +1,10 @@
-import React from 'react';
-import { useApp } from '../context/AppContext';
-import CameraFeed from './CameraFeed';
-import CameraSelector from './CameraSelector';
-import AlertsList from './AlertsList';
-import SystemStatus from './SystemStatus';
+import React from "react";
+import { useApp } from "../context/AppContext";
+import CameraFeed from "./CameraFeed";
+import CameraSelector from "./CameraSelector";
+import AlertsList from "./AlertsList";
+import SystemStatus from "./SystemStatus";
+import VideoPlayer from "./VideoPlayer";
 
 const Dashboard: React.FC = () => {
   return (
@@ -11,13 +12,13 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
         <div className="lg:col-span-2 flex flex-col gap-6 h-full">
           <div className="relative h-[60%] bg-gray-900 rounded-lg overflow-hidden">
-            <CameraFeed />
+            <VideoPlayer />
           </div>
           <div className="h-[40%] overflow-hidden">
             <SystemStatus />
           </div>
         </div>
-        
+
         <div className="flex flex-col gap-6 h-full overflow-hidden">
           <div className="h-[30%]">
             <CameraSelector />

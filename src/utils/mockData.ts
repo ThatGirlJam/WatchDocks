@@ -30,14 +30,14 @@ const generateMockCameras = (): Camera[] => [
 const generateRandomId = (): string =>
   `alert-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
-const mockAlertsDemo = [
+const mockAlertsDemo: Alert[] = [
   {
     id: generateRandomId(),
     timestamp: new Date(),
     imageUrl: theft1,
     confidence: 0.6 + Math.random() * 0.35, // Random between 0.6 and 0.95
     location: "Front Entrance",
-    status: "new",
+    status: "new" as const,
   },
   {
     id: generateRandomId(),
@@ -45,7 +45,7 @@ const mockAlertsDemo = [
     imageUrl: theft1analysis,
     confidence: 0.9, // Random between 0.6 and 0.95
     location: "Front Entrance",
-    status: "new",
+    status: "new" as const,
   },
   {
     id: generateRandomId(),
@@ -53,7 +53,7 @@ const mockAlertsDemo = [
     imageUrl: theft2,
     confidence: 0.6 + Math.random() * 0.35, // Random between 0.6 and 0.95
     location: "Front Entrance",
-    status: "new",
+    status: "new" as const,
   },
   {
     id: generateRandomId(),
@@ -61,7 +61,7 @@ const mockAlertsDemo = [
     imageUrl: theft3,
     confidence: 0.31, // Random between 0.6 and 0.95
     location: "Bike Rack North",
-    status: "new",
+    status: "new" as const,
   },
 ];
 

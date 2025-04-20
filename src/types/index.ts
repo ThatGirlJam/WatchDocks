@@ -15,14 +15,28 @@ export interface Camera {
   location: string;
   status: 'online' | 'offline';
   streamUrl?: string;
-  latitude?: number;   // Add this
-  longitude?: number;  // Add this
+  latitude?: number;
+  longitude?: number;
+}
+
+// Interface for theft reports
+export interface TheftReport {
+  id: string;
+  type: 'witnessed' | 'stolen';
+  timestamp: Date;
+  location: string;
+  bikeDescription: string;
+  contactInfo: string;
+  incidentDetails: string;
+  photoUrl: string | null;
+  status: 'new' | 'reviewing' | 'resolved' | 'false-alarm';
 }
 
 export interface AppState {
   cameras: Camera[];
   activeCamera: string | null;
   alerts: Alert[];
+  theftReports: TheftReport[];
   isConnected: boolean;
   isPredicting: boolean;
   isLoitering: boolean;

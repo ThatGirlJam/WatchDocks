@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Bell,
   Settings,
@@ -11,6 +11,7 @@ import {
   LogOut,
   LogIn,
   User,
+  AlertTriangle,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../auth/AuthContext";
@@ -76,6 +77,18 @@ const Header: React.FC = () => {
             >
               <Info className="h-4 w-4" />
               <span>Details</span>
+            </Link>
+            
+            <Link
+              to="/report-theft"
+              className={`flex items-center space-x-1 hover:text-blue-400 ${
+                location.pathname === "/report-theft"
+                  ? "text-blue-400"
+                  : "text-gray-300"
+              }`}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              <span>Report Theft</span>
             </Link>
             
             {/* Only show Review link for admins */}
@@ -197,6 +210,16 @@ const Header: React.FC = () => {
         >
           <Info className="h-5 w-5" />
           <span className="text-xs">Details</span>
+        </Link>
+        
+        <Link
+          to="/report-theft"
+          className={`flex flex-col items-center ${
+            location.pathname === "/report-theft" ? "text-blue-400" : "text-gray-300"
+          }`}
+        >
+          <AlertTriangle className="h-5 w-5" />
+          <span className="text-xs">Report</span>
         </Link>
         
         {/* Only show Review link for admins in mobile view */}

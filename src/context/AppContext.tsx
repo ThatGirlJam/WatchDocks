@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from "react";
-import { AppState, Alert, Camera } from "../types";
+import { AppState, Alert, Camera, TheftReport } from "../types";
 import { generateMockData } from "../utils/mockData";
 
 // Initial state
@@ -7,6 +7,7 @@ const initialState: AppState = {
   cameras: [],
   activeCamera: null,
   alerts: [],
+  theftReports: [], // Initialize empty theft reports array
   isConnected: false,
   isPredicting: false,
   isLoitering: false,
@@ -24,7 +25,12 @@ type Action =
   | { type: "MARK_ALL_AS_READ" }
   | { type: "SET_CONNECTION_STATUS"; payload: boolean }
   | { type: "SET_PREDICTION_STATUS"; payload: boolean }
-  | { type: "SET_LOITERING_STATUS"; payload: boolean };
+  | { type: "SET_LOITERING_STATUS"; payload: boolean }
+  | { type: "ADD_THEFT_REPORT"; payload: TheftReport }
+  | {
+      type: "UPDATE_THEFT_REPORT_STATUS";
+      payload: { id: string; status: TheftReport["status"] };
+    };
 
 // Reducer
 function reducer(state: AppState, action: Action): AppState {
@@ -59,6 +65,17 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         isLoitering: action.payload
+      };
+    case "ADD_THEFT_REPORT":
+      return { ...state, theftReports: [action.payload, ...state.theftReports] };
+    case "UPDATE_THEFT_REPORT_STATUS":
+      return {
+        ...state,
+        theftReports: state.theftReports.map((report) =>
+          report.id === action.payload.id
+            ? { ...report, status: action.payload.status }
+            : report
+        ),
       };
     default:
       return state;

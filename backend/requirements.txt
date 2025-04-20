@@ -5,3 +5,9 @@ pillow
 flask_cors
 pygame
 pymongo
+opencv-python
+inference
+inference[grounding-dino]
+inference[transformers]
+inference[sam]
+python-dotenv

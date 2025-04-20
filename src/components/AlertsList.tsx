@@ -2,10 +2,13 @@ import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import AlertCard from "./AlertCard";
 import { Alert } from "../types";
-import { Bell } from "lucide-react";
+import { Bell, ShieldAlert } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 
 const AlertsList: React.FC = () => {
   const { state, dispatch } = useApp();
+  const { userRole } = useAuth();
+  const isAdmin = userRole === 'admin';
   const [filter, setFilter] = useState<Alert["status"] | "all">("all");
 
   const filteredAlerts =
@@ -33,6 +36,16 @@ const AlertsList: React.FC = () => {
           </div>
         </div>
 
+        {/* Admin-only message */}
+        {!isAdmin && (
+          <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-md text-sm flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 flex-shrink-0" />
+            <span>
+              Alert management is restricted to administrators. You can view alerts but not change their status.
+            </span>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilter("all")}
@@ -54,36 +67,42 @@ const AlertsList: React.FC = () => {
           >
             New
           </button>
-          <button
-            onClick={() => setFilter("reviewing")}
-            className={`px-3 py-1 text-xs rounded-full transition-colors ${
-              filter === "reviewing"
-                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100"
-                : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            Reviewing
-          </button>
-          <button
-            onClick={() => setFilter("resolved")}
-            className={`px-3 py-1 text-xs rounded-full transition-colors ${
-              filter === "resolved"
-                ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
-                : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            Resolved
-          </button>
-          <button
-            onClick={() => setFilter("false-alarm")}
-            className={`px-3 py-1 text-xs rounded-full transition-colors ${
-              filter === "false-alarm"
-                ? "bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-100"
-                : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            False Alarms
-          </button>
+          
+          {/* Only show these filter options to admins */}
+          {isAdmin && (
+            <>
+              <button
+                onClick={() => setFilter("reviewing")}
+                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                  filter === "reviewing"
+                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+              >
+                Reviewing
+              </button>
+              <button
+                onClick={() => setFilter("resolved")}
+                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                  filter === "resolved"
+                    ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+              >
+                Resolved
+              </button>
+              <button
+                onClick={() => setFilter("false-alarm")}
+                className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                  filter === "false-alarm"
+                    ? "bg-gray-300 text-gray-800 dark:bg-gray-600 dark:text-gray-100"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+              >
+                False Alarms
+              </button>
+            </>
+          )}
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import React from "react";
 import { formatDistanceToNow } from "../utils/dateUtils";
 import { Alert } from "../types";
 import { AlertTriangle, CheckCircle, Clock, XCircle } from "lucide-react";
+import { useAuth } from "../auth/AuthContext";
 
 interface AlertCardProps {
   alert: Alert;
@@ -9,6 +10,8 @@ interface AlertCardProps {
 }
 
 const AlertCard: React.FC<AlertCardProps> = ({ alert, onStatusChange }) => {
+  const { userRole } = useAuth();
+  const isAdmin = userRole === 'admin';
   const getStatusIcon = () => {
     switch (alert.status) {
       case "new":
@@ -100,50 +103,60 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onStatusChange }) => {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mt-4">
-          {alert.status === "new" && (
-            <>
+        {/* Only show status change buttons for admin users */}
+        {isAdmin && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {alert.status === "new" && (
+              <>
+                <button
+                  onClick={() => handleStatusChange("reviewing")}
+                  className="flex-1 px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full transition-colors hover:bg-yellow-200"
+                >
+                  Review
+                </button>
+                <button
+                  onClick={() => handleStatusChange("false-alarm")}
+                  className="flex-1 px-3 py-1 text-xs bg-gray-100 text-gray-800 rounded-full transition-colors hover:bg-gray-200"
+                >
+                  Mark as False Alarm
+                </button>
+              </>
+            )}
+
+            {alert.status === "reviewing" && (
+              <>
+                <button
+                  onClick={() => handleStatusChange("resolved")}
+                  className="flex-1 px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full transition-colors hover:bg-green-200"
+                >
+                  Mark as Resolved
+                </button>
+                <button
+                  onClick={() => handleStatusChange("false-alarm")}
+                  className="flex-1 px-3 py-1 text-xs bg-gray-100 text-gray-800 rounded-full transition-colors hover:bg-gray-200"
+                >
+                  Mark as False Alarm
+                </button>
+              </>
+            )}
+
+            {(alert.status === "resolved" || alert.status === "false-alarm") && (
               <button
                 onClick={() => handleStatusChange("reviewing")}
-                className="flex-1 px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full transition-colors hover:bg-yellow-200"
+                className="flex-1 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full transition-colors hover:bg-blue-200"
               >
-                Review
+                Reopen
               </button>
-              <button
-                onClick={() => handleStatusChange("false-alarm")}
-                className="flex-1 px-3 py-1 text-xs bg-gray-100 text-gray-800 rounded-full transition-colors hover:bg-gray-200"
-              >
-                Mark as False Alarm
-              </button>
-            </>
-          )}
-
-          {alert.status === "reviewing" && (
-            <>
-              <button
-                onClick={() => handleStatusChange("resolved")}
-                className="flex-1 px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full transition-colors hover:bg-green-200"
-              >
-                Mark as Resolved
-              </button>
-              <button
-                onClick={() => handleStatusChange("false-alarm")}
-                className="flex-1 px-3 py-1 text-xs bg-gray-100 text-gray-800 rounded-full transition-colors hover:bg-gray-200"
-              >
-                Mark as False Alarm
-              </button>
-            </>
-          )}
-
-          {(alert.status === "resolved" || alert.status === "false-alarm") && (
-            <button
-              onClick={() => handleStatusChange("reviewing")}
-              className="flex-1 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full transition-colors hover:bg-blue-200"
-            >
-              Reopen
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
+        
+        {/* Message for non-admin users */}
+        {!isAdmin && alert.status === "new" && (
+          <div className="mt-4 text-sm text-gray-500 italic">
+            Alert pending review by an administrator
+          </div>
+        )}
       </div>
     </div>
   );

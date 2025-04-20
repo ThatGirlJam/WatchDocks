@@ -298,15 +298,27 @@ const VideoPlayer: React.FC = () => {
   };
 
   // Motion detection states
+  const DEFAULT_MOTION_SETTINGS: MotionSettings = {
+    minFlow: 10,
+    maxFlow: 100,
+    minAreaPercent: 15,
+    threshold: 70,
+    showMask: true,
+  };
+
   const [motionSettings, setMotionSettings] = useState<MotionSettings>(() => {
     const savedSettings = localStorage.getItem(`motion_settings_${activeCamera?.id}`);
-    return savedSettings ? JSON.parse(savedSettings) : {
-      minFlow: 10,
-      maxFlow: 100,
-      minAreaPercent: 2,
-      threshold: 30,
-      showMask: true
-    };
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        // Merge defaults with stored values, so missing fields get defaults
+        return { ...DEFAULT_MOTION_SETTINGS, ...parsed };
+      } catch {
+        // If parsing fails, fall back to defaults
+        return DEFAULT_MOTION_SETTINGS;
+      }
+    }
+    return DEFAULT_MOTION_SETTINGS;
   });
   
   const [roi, setRoi] = useState<ROI>(() => {
@@ -316,7 +328,7 @@ const VideoPlayer: React.FC = () => {
   
   const [isDrawingRoi, setIsDrawingRoi] = useState(false);
   const [motionDetected, setMotionDetected] = useState(false);
-  const [showMotionDetection, setShowMotionDetection] = useState(true);
+  const [showMotionDetection, setShowMotionDetection] = useState(false); // Default to closed eye
   const [motionMask, setMotionMask] = useState<ImageData | null>(null);
   const [activeMotionAreas, setActiveMotionAreas] = useState<{x: number, y: number, w: number, h: number}[]>([]);
 
@@ -329,10 +341,10 @@ const VideoPlayer: React.FC = () => {
   const [loiteringMinSize] = useState(50); 
   
   // Debugging flags to better understand the tracking
-  const [showAllTrackedObjects, setShowAllTrackedObjects] = useState(true);
-  const [showDebugInfo, setShowDebugInfo] = useState(true);
-  const [persistentTracking, setPersistentTracking] = useState(true);
-  const [showDecayingObjects, setShowDecayingObjects] = useState(true);
+  const [showAllTrackedObjects, setShowAllTrackedObjects] = useState(false); // Hide tracking
+  const [showDebugInfo, setShowDebugInfo] = useState(false); // Hide debug info
+  const [persistentTracking, setPersistentTracking] = useState(false); // Normal persistence
+  const [showDecayingObjects, setShowDecayingObjects] = useState(false); // Hide fading objects
   
   // Track areas where people spend time - like a heatmap
   const [dwellMap, setDwellMap] = useState<Map<string, number>>(new Map());

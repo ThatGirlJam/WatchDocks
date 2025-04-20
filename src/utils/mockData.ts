@@ -83,9 +83,13 @@ export const generateRandomAlert = (cameras: Camera[]): Alert | null => {
   };
 };
 
+// Helper to generate a unique ID
+const generateRandomId = (): string =>
+  `alert-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+
 const mockAlertsDemo = [
   {
-    id: `alert-1`,
+    id: generateRandomId(),
     timestamp: new Date(),
     imageUrl: theft1,
     confidence: 0.6 + Math.random() * 0.35, // Random between 0.6 and 0.95
@@ -93,7 +97,7 @@ const mockAlertsDemo = [
     status: "new",
   },
   {
-    id: `alert-2`,
+    id: generateRandomId(),
     timestamp: new Date(),
     imageUrl: theft1analysis,
     confidence: 0.9, // Random between 0.6 and 0.95
@@ -101,7 +105,7 @@ const mockAlertsDemo = [
     status: "new",
   },
   {
-    id: `alert-3`,
+    id: generateRandomId(),
     timestamp: new Date(),
     imageUrl: theft2,
     confidence: 0.6 + Math.random() * 0.35, // Random between 0.6 and 0.95
@@ -109,7 +113,7 @@ const mockAlertsDemo = [
     status: "new",
   },
   {
-    id: `alert-4`,
+    id: generateRandomId(),
     timestamp: new Date(),
     imageUrl: theft3,
     confidence: 0.31, // Random between 0.6 and 0.95

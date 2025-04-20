@@ -25,4 +25,5 @@ export interface AppState {
   alerts: Alert[];
   isConnected: boolean;
   isPredicting: boolean;
+  isLoitering: boolean;
 }

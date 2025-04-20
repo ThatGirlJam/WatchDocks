@@ -9,6 +9,7 @@ const initialState: AppState = {
   alerts: [],
   isConnected: false,
   isPredicting: false,
+  isLoitering: false,
 };
 
 // Action types
@@ -22,7 +23,8 @@ type Action =
     }
   | { type: "MARK_ALL_AS_READ" }
   | { type: "SET_CONNECTION_STATUS"; payload: boolean }
-  | { type: "SET_PREDICTION_STATUS"; payload: boolean };
+  | { type: "SET_PREDICTION_STATUS"; payload: boolean }
+  | { type: "SET_LOITERING_STATUS"; payload: boolean };
 
 // Reducer
 function reducer(state: AppState, action: Action): AppState {
@@ -53,6 +55,11 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, isConnected: action.payload };
     case "SET_PREDICTION_STATUS":
       return { ...state, isPredicting: action.payload };
+    case 'SET_LOITERING_STATUS':
+      return {
+        ...state,
+        isLoitering: action.payload
+      };
     default:
       return state;
   }

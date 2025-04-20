@@ -29,7 +29,7 @@ interface TrackedObject {
 }
 
 const VideoPlayer: React.FC = () => {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const activeCamera = state.cameras.find(camera => camera.id === state.activeCamera);
   
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -790,6 +790,10 @@ const VideoPlayer: React.FC = () => {
               
               // Update loitering state
               setLoiteringDetected(loiteringFound);
+              // Add this to propagate to app context
+              if (loiteringFound !== state.isLoitering) {
+                dispatch({ type: 'SET_LOITERING_STATUS', payload: loiteringFound });
+              }
               
               return updatedObjects;
             });
@@ -1217,6 +1221,39 @@ const VideoPlayer: React.FC = () => {
       </div>
     </div>
   );
+};
+
+export const captureCurrentFrame = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const video = document.querySelector('video');
+    if (!video) {
+      reject(new Error('Video element not found'));
+      return;
+    }
+
+    try {
+      // Create a canvas at the video's dimensions
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      // Draw the current frame to the canvas
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not create canvas context'));
+        return;
+      }
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      // Convert to base64 image data
+      // Remove the data:image/png;base64, prefix
+      const imageData = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+      resolve(imageData);
+    } catch (err) {
+      reject(err);
+    }
+  });
 };
 
 export default VideoPlayer;

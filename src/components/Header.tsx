@@ -8,13 +8,18 @@ import {
   Home,
   Info,
   CheckCircle,
+  LogOut,
+  LogIn,
+  User,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { useAuth } from "../auth/AuthContext";
 import SettingsModal from "./SettingsModal";
 import NotificationsModal from "./NotificationsModal";
 
 const Header: React.FC = () => {
   const { state } = useApp();
+  const { isAuthenticated, login, logout, userRole, user } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const newAlertsCount = state.alerts.filter(
@@ -107,25 +112,56 @@ const Header: React.FC = () => {
               </span>
             </div>
 
-            <div className="relative">
-              <button
-                className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-                onClick={() => setShowNotifications(true)}
-              >
-                <Bell className="h-5 w-5" />
-                {newAlertsCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {newAlertsCount}
+            {isAuthenticated && (
+              <>
+                <div className="hidden md:flex items-center mr-4 bg-gray-800 px-2 py-1 rounded">
+                  <User className="h-4 w-4 text-blue-400 mr-1" />
+                  <span className="text-sm">
+                    {user?.email?.split('@')[0] || 'User'} | 
+                    <span className={`ml-1 ${userRole === 'admin' ? 'text-green-400' : 'text-gray-400'}`}>
+                      {userRole}
+                    </span>
                   </span>
-                )}
-              </button>
-            </div>
+                </div>
+              
+                <div className="relative">
+                  <button
+                    className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+                    onClick={() => setShowNotifications(true)}
+                  >
+                    <Bell className="h-5 w-5" />
+                    {newAlertsCount > 0 && (
+                      <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {newAlertsCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                
+                <button
+                  className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+                  onClick={() => setShowSettings(true)}
+                >
+                  <Settings className="h-5 w-5" />
+                </button>
+              </>
+            )}
 
             <button
-              className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-              onClick={() => setShowSettings(true)}
+              className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 transition-colors px-3 py-1 rounded"
+              onClick={isAuthenticated ? logout : login}
             >
-              <Settings className="h-5 w-5" />
+              {isAuthenticated ? (
+                <>
+                  <LogOut className="h-4 w-4" />
+                  <span className="text-sm">Logout</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-4 w-4" />
+                  <span className="text-sm">Login</span>
+                </>
+              )}
             </button>
           </div>
         </div>

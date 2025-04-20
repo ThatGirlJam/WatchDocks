@@ -11,10 +11,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[1050] flex items-center justify-center">
       <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md mx-4">
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Settings
+          </h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
@@ -22,10 +24,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        
+
         <div className="p-4 space-y-4">
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900 dark:text-white">Notifications</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">
+              Notifications
+            </h3>
             <div className="space-y-2">
               <label className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -45,7 +49,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900 dark:text-white">Display</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">
+              Display
+            </h3>
             <div className="space-y-2">
               <label className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -58,7 +64,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-medium text-gray-900 dark:text-white">Security</h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">
+              Security
+            </h3>
             <div className="space-y-2">
               <label className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

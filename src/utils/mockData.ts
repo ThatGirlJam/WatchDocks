@@ -1,4 +1,8 @@
 import { Camera, Alert } from "../types";
+import theft1 from "../assets/images/theft-1.png";
+import theft2 from "../assets/images/theft-2.png";
+import theft1analysis from "../assets/images/theft-1-analysis.png";
+import theft3 from "../assets/images/theft-3.png";
 
 // Generate mock cameras
 const generateMockCameras = (): Camera[] => [
@@ -18,45 +22,45 @@ const generateMockCameras = (): Camera[] => [
   },
 ];
 
-// Generate mock alerts
-const generateMockAlerts = (): Alert[] => [
-  {
-    id: "alert1",
-    timestamp: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
-    imageUrl:
-      "https://images.pexels.com/photos/5767583/pexels-photo-5767583.jpeg",
-    confidence: 0.86,
-    location: "Front Entrance",
-    status: "new",
-  },
-  {
-    id: "alert2",
-    timestamp: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-    imageUrl:
-      "https://images.pexels.com/photos/593172/pexels-photo-593172.jpeg",
-    confidence: 0.92,
-    location: "Bike Rack North",
-    status: "reviewing",
-  },
-  {
-    id: "alert3",
-    timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-    imageUrl:
-      "https://images.pexels.com/photos/1149601/pexels-photo-1149601.jpeg",
-    confidence: 0.78,
-    location: "Back Alley",
-    status: "resolved",
-  },
-  {
-    id: "alert4",
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-    imageUrl:
-      "https://images.pexels.com/photos/16776590/pexels-photo-16776590/free-photo-of-close-up-of-a-bicycle-chain.jpeg",
-    confidence: 0.65,
-    location: "Parking Lot East",
-    status: "false-alarm",
-  },
-];
+// // Generate mock alerts
+// const generateMockAlerts = (): Alert[] => [
+//   {
+//     id: "alert1",
+//     timestamp: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
+//     imageUrl:
+//       "https://images.pexels.com/photos/5767583/pexels-photo-5767583.jpeg",
+//     confidence: 0.86,
+//     location: "Front Entrance",
+//     status: "new",
+//   },
+//   {
+//     id: "alert2",
+//     timestamp: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
+//     imageUrl:
+//       "https://images.pexels.com/photos/593172/pexels-photo-593172.jpeg",
+//     confidence: 0.92,
+//     location: "Bike Rack North",
+//     status: "reviewing",
+//   },
+//   {
+//     id: "alert3",
+//     timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+//     imageUrl:
+//       "https://images.pexels.com/photos/1149601/pexels-photo-1149601.jpeg",
+//     confidence: 0.78,
+//     location: "Back Alley",
+//     status: "resolved",
+//   },
+//   {
+//     id: "alert4",
+//     timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
+//     imageUrl:
+//       "https://images.pexels.com/photos/16776590/pexels-photo-16776590/free-photo-of-close-up-of-a-bicycle-chain.jpeg",
+//     confidence: 0.65,
+//     location: "Parking Lot East",
+//     status: "false-alarm",
+//   },
+// ];
 
 // Function to simulate a new alert
 export const generateRandomAlert = (cameras: Camera[]): Alert | null => {
@@ -67,14 +71,7 @@ export const generateRandomAlert = (cameras: Camera[]): Alert | null => {
   const camera =
     onlineCameras[Math.floor(Math.random() * onlineCameras.length)];
 
-  // Array of stock images that could represent bike theft situations
-  const bikeImages = [
-    "https://images.pexels.com/photos/1149601/pexels-photo-1149601.jpeg",
-    "https://images.pexels.com/photos/5767583/pexels-photo-5767583.jpeg",
-    "https://images.pexels.com/photos/16776590/pexels-photo-16776590/free-photo-of-close-up-of-a-bicycle-chain.jpeg",
-    "https://images.pexels.com/photos/593172/pexels-photo-593172.jpeg",
-    "https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg",
-  ];
+  const bikeImages = [theft1, theft2, theft1analysis];
 
   return {
     id: `alert-${Date.now()}`,
@@ -86,8 +83,47 @@ export const generateRandomAlert = (cameras: Camera[]): Alert | null => {
   };
 };
 
+// Helper to generate a unique ID
+const generateRandomId = (): string =>
+  `alert-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+
+const mockAlertsDemo = [
+  {
+    id: generateRandomId(),
+    timestamp: new Date(),
+    imageUrl: theft1,
+    confidence: 0.6 + Math.random() * 0.35, // Random between 0.6 and 0.95
+    location: "Front Entrance",
+    status: "new",
+  },
+  {
+    id: generateRandomId(),
+    timestamp: new Date(),
+    imageUrl: theft1analysis,
+    confidence: 0.9, // Random between 0.6 and 0.95
+    location: "Front Entrance",
+    status: "new",
+  },
+  {
+    id: generateRandomId(),
+    timestamp: new Date(),
+    imageUrl: theft2,
+    confidence: 0.6 + Math.random() * 0.35, // Random between 0.6 and 0.95
+    location: "Front Entrance",
+    status: "new",
+  },
+  {
+    id: generateRandomId(),
+    timestamp: new Date(),
+    imageUrl: theft3,
+    confidence: 0.31, // Random between 0.6 and 0.95
+    location: "Bike Rack North",
+    status: "new",
+  },
+];
+
 // Export both mock data generators
 export const generateMockData = () => ({
   mockCameras: generateMockCameras(),
-  mockAlerts: generateMockAlerts(),
+  mockAlerts: mockAlertsDemo,
 });

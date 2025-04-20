@@ -55,11 +55,11 @@ const AlertCard: React.FC<AlertCardProps> = ({ alert, onStatusChange }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg">
       <div className="relative">
-        {/* <img 
-          src={alert.imageUrl} 
-          alt="Alert snapshot" 
+        <img
+          src={alert.imageUrl}
+          alt="Alert snapshot"
           className="w-full h-40 object-cover"
-        /> */}
+        />
         <div className="absolute top-2 right-2 flex gap-1 items-center text-sm rounded px-2 py-1 dark:bg-gray-900/80 bg-gray-100/90">
           <span className="font-mono">
             {alert.timestamp.toLocaleTimeString([], {

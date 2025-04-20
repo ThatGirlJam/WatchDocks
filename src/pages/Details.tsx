@@ -9,8 +9,6 @@ import {
 } from "lucide-react";
 
 const Details: React.FC = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
@@ -18,13 +16,6 @@ const Details: React.FC = () => {
           <Activity className="h-6 w-6" />
           Bike Dock Status Details
         </h1>
-        <button
-          onClick={() => navigate("/")}
-          className="mt-2 text-blue-500 text-sm flex items-center gap-1 hover:text-blue-600 transition-colors"
-        >
-          <span>Back to Dashboard</span>
-          {/* You could use a different icon for "back" if you prefer */}
-        </button>
       </div>
 
       <section className="mb-6">
